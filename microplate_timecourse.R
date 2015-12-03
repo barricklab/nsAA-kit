@@ -67,23 +67,23 @@ analyze_microplate <- function(dataFile, keyFile, output_base_name) {
   #write.csv(masterTbl, "masterTbl.csv")
 
   ## Now make graphs of raw data per well!
-  ggplot(masterTbl, aes(time, GFS, color=codon, linetype=AA)) +
-    geom_line() +
-    coord_cartesian() +
-    facet_grid(plate_column ~ plate_row, scales="fixed")
-  ggsave(paste0(output_base_name, ".raw.plate.GFS.pdf"), width=2*plot.width, height=2*plot.height)
-
-  ggplot(masterTbl, aes(time, RFS, color=codon, linetype=AA)) +
-    geom_line() +
-    coord_cartesian() +
-    facet_grid(plate_column ~ plate_row, scales="fixed")
-  ggsave(paste0(output_base_name, ".raw.plate.RFS.pdf"), width=2*plot.width, height=2*plot.height)
-
-  ggplot(masterTbl, aes(time, OD600, color=codon, linetype=AA)) +
-    geom_line() +
-    coord_cartesian() +
-    facet_grid(plate_column ~ plate_row, scales="fixed")
-  ggsave(paste0(output_base_name, ".raw.plate.OD600.pdf"), width=12, height=8)
+  # ggplot(masterTbl, aes(time, GFS, color=codon, linetype=AA)) +
+  #   geom_line() +
+  #   coord_cartesian() +
+  #   facet_grid(plate_column ~ plate_row, scales="fixed")
+  # ggsave(paste0(output_base_name, ".raw.plate.GFS.pdf"), width=2*plot.width, height=2*plot.height)
+  #
+  # ggplot(masterTbl, aes(time, RFS, color=codon, linetype=AA)) +
+  #   geom_line() +
+  #   coord_cartesian() +
+  #   facet_grid(plate_column ~ plate_row, scales="fixed")
+  # ggsave(paste0(output_base_name, ".raw.plate.RFS.pdf"), width=2*plot.width, height=2*plot.height)
+  #
+  # ggplot(masterTbl, aes(time, OD600, color=codon, linetype=AA)) +
+  #   geom_line() +
+  #   coord_cartesian() +
+  #   facet_grid(plate_column ~ plate_row, scales="fixed")
+  # ggsave(paste0(output_base_name, ".raw.plate.OD600.pdf"), width=12, height=8)
 
   expTbl <- masterTbl %>%
     filter(codon != "blank" & codon != "none") %>%
@@ -148,17 +148,17 @@ analyze_microplate <- function(dataFile, keyFile, output_base_name) {
     mutate(time=as.numeric(time), AA=as.factor(AA), replicate=as.factor(replicate)) %>%
     group_by(time, aaRS, codon)
 
-  minExpOD600 = 0.3
-  maxExpOD600 = 0.4
-  maxFilteredExpOD600Tbl = netOD600Tbl %>% filter(netOD600 >= maxExpOD600)
-  maxExpTime = min(maxFilteredExpOD600Tbl$time)
-  minFilteredExpOD600Tbl = netOD600Tbl %>% filter(netOD600 <= minExpOD600)
-  minExpTime = max(minFilteredExpOD600Tbl$time)
+  # minExpOD600 = 0.3
+  # maxExpOD600 = 0.4
+  # maxFilteredExpOD600Tbl = netOD600Tbl %>% filter(netOD600 >= maxExpOD600)
+  # maxExpTime = min(maxFilteredExpOD600Tbl$time)
+  # minFilteredExpOD600Tbl = netOD600Tbl %>% filter(netOD600 <= minExpOD600)
+  # minExpTime = max(minFilteredExpOD600Tbl$time)
 
   p1 = ggplot(netOD600Tbl, aes(time, netOD600, group=interaction(replicate, AA, codon, clone), color=codon, linetype=AA)) +
     geom_line() +
-    coord_cartesian(ylim=c(0, 0.8), xlim=c(0,15)) +
-    ggsave(paste0(output_base_name, ".net_OD600.pdf"), width=plot.width, height=plot.height)
+    coord_cartesian(ylim=c(0, 0.8), xlim=c(0,15)) #+
+    # ggsave(paste0(output_base_name, ".net_OD600.pdf"), width=plot.width, height=plot.height)
 
   ## Return to calculations of ratios
 
@@ -172,8 +172,8 @@ analyze_microplate <- function(dataFile, keyFile, output_base_name) {
 
   p3 = ggplot(normGFSTbl, aes(time, value, group=interaction(replicate, AA, codon, clone), color=codon, linetype=AA)) +
     geom_line() +
-    coord_cartesian(ylim=c(-5000, 45000), xlim=c(0,15)) +
-  ggsave(paste0(output_base_name, ".normalized_GFP.pdf"), width=plot.width, height=plot.height)
+    coord_cartesian(ylim=c(-5000, 45000), xlim=c(0,15)) #+
+  # ggsave(paste0(output_base_name, ".normalized_GFP.pdf"), width=plot.width, height=plot.height)
 
   normRFSTbl <- expBlankMasterTbl %>%
     mutate(netGFS = rawGFS-blankGFS, netOD600=rawOD600-blankOD600, netRFS=rawRFS-blankRFS) %>%
@@ -184,8 +184,8 @@ analyze_microplate <- function(dataFile, keyFile, output_base_name) {
 
   p2 = ggplot(normRFSTbl, aes(time, value, group=interaction(replicate, AA, codon, clone), color=codon, linetype=AA)) +
     geom_line() +
-    coord_cartesian(ylim=c(-2000, 8000), xlim=c(0,15)) +
-    ggsave(paste0(output_base_name, ".normalized_RFP.pdf"), width=plot.width, height=plot.height)
+    coord_cartesian(ylim=c(-2000, 8000), xlim=c(0,15)) #+
+  # ggsave(paste0(output_base_name, ".normalized_RFP.pdf"), width=plot.width, height=plot.height)
 
 
   ## Construct final tables of normalized RFP and GFP signals
@@ -240,7 +240,7 @@ analyze_microplate <- function(dataFile, keyFile, output_base_name) {
     coord_cartesian(ylim=c(-0.2, 1.8), xlim=c(0,15)) +
     geom_hline(aes(yintercept=1), linetype="dashed")
 
-  ggsave(paste0(output_base_name, ".RRE.pdf"), width=plot.width, height=plot.height)
+  # ggsave(paste0(output_base_name, ".RRE.pdf"), width=plot.width, height=plot.height)
 
   ## Construct tables of RFP/GFP ratios
 
@@ -266,7 +266,7 @@ analyze_microplate <- function(dataFile, keyFile, output_base_name) {
     coord_cartesian(ylim=c(-0.2, 1.8), xlim=c(0,15)) +
     geom_hline(aes(yintercept=1), linetype="dashed")
 
-  ggsave(paste0(output_base_name, ".R3C.pdf"), width=plot.width, height=plot.height)
+  # ggsave(paste0(output_base_name, ".R3C.pdf"), width=plot.width, height=plot.height)
 
   ## Plotting with 95% confidence interval
 
