@@ -29,7 +29,5 @@ vignettes/*.pdf
 Rplots.pdf
 
 # Project specific
-output
-input
 R3C-master.R
 growth-curve-master.R
