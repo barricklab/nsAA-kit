@@ -6,7 +6,7 @@ library(ggplot2)
 
 #USE R VERSION 3.1.3, VERSION 3.2.1 WILL NOT CURRENTLY FUNCTION
 
-filePath <- "~/box/"
+filePath <- "~/src/ncAA-kit/input_examples/"
 dataFile <- "c321-growthcurve-f500-101115.xlsx"
 keyFile <- "key-c321-growthcurve-f500-101115.xlsx"
 
@@ -65,7 +65,9 @@ ggplot(expTbl, aes(x=time, y=meanValue, color=strain)) +
   scale_x_continuous(limits = c(0, 24.5)) +
   ylab(bquote(log[10] ~ OD[600])) +
   xlab("Time (h)") +
-  theme(legend.position="right") +
+  theme(legend.position="right") 
+
++
   geom_errorbar(aes(x=time, ymin=LCI, ymax=UCI), size=.1, width=.25)
 
 # levels(masterTbl$measurementType) <- c("OD[600]")

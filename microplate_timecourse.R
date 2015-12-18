@@ -39,12 +39,92 @@ parseIcontrolOutput <- function(data, lookupTable, numMeasurementTypes = 3, numW
 
 }
 
+
+summarySE <- function(data=NULL, measurevar, groupvars=NULL, na.rm=FALSE,
+                      conf.interval=.95, .drop=TRUE) {
+  library(plyr)
+  
+  # New version of length which can handle NA's: if na.rm==T, don't count them
+  length2 <- function (x, na.rm=FALSE) {
+    if (na.rm) sum(!is.na(x))
+    else       length(x)
+  }
+  
+  # This does the summary. For each group's data frame, return a vector with
+  # N, mean, and sd
+  datac <- ddply(data, groupvars, .drop=.drop,
+                 .fun = function(xx, col) {
+                   c(N    = length2(xx[[col]], na.rm=na.rm),
+                     mean = mean   (xx[[col]], na.rm=na.rm),
+                     sd   = sd     (xx[[col]], na.rm=na.rm)
+                   )
+                 },
+                 measurevar
+  )
+  
+  # Rename the "mean" column    
+  datac <- rename(datac, c("mean" = measurevar))
+  
+  datac$se <- datac$sd / sqrt(datac$N)  # Calculate standard error of the mean
+  
+  # Confidence interval multiplier for standard error
+  # Calculate t-statistic for confidence interval: 
+  # e.g., if conf.interval is .95, use .975 (above/below), and use df=N-1
+  ciMult <- qt(conf.interval/2 + .5, datac$N-1)
+  datac$ci <- datac$se * ciMult
+  
+  return(datac)
+}
+
+average_over_OD_window <- function(data, OD.range)
+{
+  return.averages = c();
+  
+  minExpOD600 = OD.range[1];
+  maxExpOD600 = OD.range[2];
+  
+  clone.list = levels(droplevels(data$netOD600Tbl$clone))
+  for (this.clone in clone.list) {
+    this.clone.data = data$netOD600Tbl %>% filter(clone == this.clone)
+    replicate.list = levels(droplevels(this.clone.data$replicate))
+    
+    #now figure out the value to keep
+    for (this.replicate in replicate.list) {
+      
+      
+      this.replicate.data = this.clone.data %>% filter(replicate == this.replicate)
+      
+      ##average OD600 over all 4 curves used in calculating R3C value for this replicate!!
+      avgOD600Tbl = this.replicate.data %>% group_by(time) %>% summarize(avgOD600 = mean(netOD600))
+      
+      maxFilteredExpOD600Tbl = avgOD600Tbl %>% filter(avgOD600 >= maxExpOD600)
+      maxExpTime = min(maxFilteredExpOD600Tbl$time)
+      
+      minFilteredExpOD600Tbl = avgOD600Tbl %>% filter(avgOD600 <= minExpOD600)
+      minExpTime = max(minFilteredExpOD600Tbl$time)
+      
+      ##now
+      
+      R3C.window = data$absentToPresentRatioAmberToTyrosineRatioGFSToRFSRatioTbl %>% filter (replicate == this.replicate) %>% filter(clone == this.clone) %>% filter(time >= minExpTime) %>% filter(time <= maxExpTime)
+      this.R3C = mean(R3C.window$value)
+      
+      new.row = data.frame(aaRS = R3C.window$aaRS[1], clone=this.clone, replicate=this.replicate, minTime = minExpTime, maxTime = maxExpTime, R3C=this.R3C)
+      return.averages = return.averages %>% bind_rows(new.row)
+      
+      ##add row to output table
+    }
+  } 
+  
+  return(return.averages);
+}
+
+## OD range is the range to perform the calculation of R3C across
 analyze_microplate <- function(dataFile, keyFile, output_base_name) {
 
   ## Set for debugging
-  #dataFile = "input_examples/3-aminotyrosine-032615.xlsx"
-  #keyFile = "input_examples/key-3-aminotyrosine-032615.xlsx"
-  #output_base_name = "output/3-aminotyrosine-032615"
+  dataFile = "input_examples/o-nitrobenzyltyrosine-preconditioned-050215.xlsx"
+  keyFile = "input_examples/key-o-nitrobenzyltyrosine-preconditioned-050215.xlsx"
+  output_base_name = "output/o-nitrobenzyltyrosine-050215"
 
   ## Global settings for graphs
   theme_set(theme_bw(base_size = 24))
@@ -139,29 +219,19 @@ analyze_microplate <- function(dataFile, keyFile, output_base_name) {
     facet_grid(measurementType ~ aaRS, scales = "free_y")
   ggsave(paste0(output_base_name, ".all.signals.pdf"), width=plot.width, height=7*plot.height)
 
-  ## Continue with main tables
-
-  ## Find the exponential time window
+  ## Return to calculations of ratios
 
   netOD600Tbl <- expBlankMasterTbl %>%
     mutate(netOD600=rawOD600-blankOD600) %>%
     mutate(time=as.numeric(time), AA=as.factor(AA), replicate=as.factor(replicate)) %>%
     group_by(time, aaRS, codon)
-
-  # minExpOD600 = 0.3
-  # maxExpOD600 = 0.4
-  # maxFilteredExpOD600Tbl = netOD600Tbl %>% filter(netOD600 >= maxExpOD600)
-  # maxExpTime = min(maxFilteredExpOD600Tbl$time)
-  # minFilteredExpOD600Tbl = netOD600Tbl %>% filter(netOD600 <= minExpOD600)
-  # minExpTime = max(minFilteredExpOD600Tbl$time)
-
+  
   p1 = ggplot(netOD600Tbl, aes(time, netOD600, group=interaction(replicate, AA, codon, clone), color=codon, linetype=AA)) +
     geom_line() +
     coord_cartesian(ylim=c(0, 0.8), xlim=c(0,15)) #+
-    # ggsave(paste0(output_base_name, ".net_OD600.pdf"), width=plot.width, height=plot.height)
-
-  ## Return to calculations of ratios
-
+  # ggsave(paste0(output_base_name, ".net_OD600.pdf"), width=plot.width, height=plot.height)
+  
+  
   normGFSTbl <- expBlankMasterTbl %>%
     mutate(netGFS = rawGFS-blankGFS, netOD600=rawOD600-blankOD600, netRFS=rawRFS-blankRFS) %>%
     transmute(time = time, AA = AA, replicate = replicate, aaRS = aaRS, clone = clone, codon = codon,
@@ -261,10 +331,19 @@ analyze_microplate <- function(dataFile, keyFile, output_base_name) {
     separate(commonAA, into = c("time", "aaRS", "clone", "replicate"), sep = "\\|") %>%
     mutate(time=as.numeric(time), clone=as.factor(clone), replicate=as.factor(replicate))
 
+  if (length(levels(absentToPresentRatioAmberToTyrosineRatioGFSToRFSRatioTbl$clone))>1) {
+    
   p5 = ggplot(absentToPresentRatioAmberToTyrosineRatioGFSToRFSRatioTbl, aes(time, value, group=interaction(replicate, clone), color=clone)) +
     geom_line() +
     coord_cartesian(ylim=c(-0.2, 1.8), xlim=c(0,15)) +
     geom_hline(aes(yintercept=1), linetype="dashed")
+}
+  else {
+    p5 = ggplot(absentToPresentRatioAmberToTyrosineRatioGFSToRFSRatioTbl, aes(time, value, group=interaction(replicate, clone), color=replicate)) +
+      geom_line() +
+      coord_cartesian(ylim=c(-0.2, 1.8), xlim=c(0,15)) +
+      geom_hline(aes(yintercept=1), linetype="dashed")
+  }
 
   # ggsave(paste0(output_base_name, ".R3C.pdf"), width=plot.width, height=plot.height)
 
@@ -287,4 +366,10 @@ analyze_microplate <- function(dataFile, keyFile, output_base_name) {
 
   plot_grid(p1, p2, p3, p4, p5, align='vh', ncol=1)
   ggsave(paste0(output_base_name, ".final.pdf"), width=plot.width, height=plot.height*5)
+  
+  ## Create a data structure with calculated info in it to return
+  ret = c()
+  ret$netOD600Tbl = netOD600Tbl
+  ret$absentToPresentRatioAmberToTyrosineRatioGFSToRFSRatioTbl = absentToPresentRatioAmberToTyrosineRatioGFSToRFSRatioTbl
+  return (ret)
 }
