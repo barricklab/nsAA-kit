@@ -1,6 +1,18 @@
+### OS X ###
+.DS_Store
+[._]*.s[a-w][a-z]
+[._]s[a-w][a-z]
+*.un~
+.netrwhist
+*~
+
+### R ###
 # History files
 .Rhistory
 .Rapp.history
+
+# Session Data files
+.RData
 
 # Example code in package build process
 *-Ex.R
@@ -11,8 +23,13 @@
 # produced vignettes
 vignettes/*.html
 vignettes/*.pdf
+
 .Rproj.user
 
+Rplots.pdf
+
+# Project specific
 output
 input
-master.R
+R3C-master.R
+growth-curve-master.R
