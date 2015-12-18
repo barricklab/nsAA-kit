@@ -122,9 +122,9 @@ average_over_OD_window <- function(data, OD.range)
 analyze_microplate <- function(dataFile, keyFile, output_base_name) {
 
   ## Set for debugging
-  dataFile = "input_examples/o-nitrobenzyltyrosine-preconditioned-050215.xlsx"
-  keyFile = "input_examples/key-o-nitrobenzyltyrosine-preconditioned-050215.xlsx"
-  output_base_name = "output/o-nitrobenzyltyrosine-050215"
+  #dataFile = "input-examples/tyrosine-081415.xlsx"
+  #keyFile = "input-examples/key-tyrosine-081415.xlsx"
+  #output_base_name = "output/tyrosine-081415"
 
   ## Global settings for graphs
   theme_set(theme_bw(base_size = 24))
@@ -133,12 +133,10 @@ analyze_microplate <- function(dataFile, keyFile, output_base_name) {
   plot.width = 6
   plot.height = 4
 
-  masterTbl <- tbl_df(data.frame())
-  for(i in excel_sheets(dataFile)) {
-    rawDataTbl <- read_excel(dataFile, sheet = i, col_names = FALSE, skip = 0) %>% slice(1:300)
-    rawKeyTbl <- read_excel(keyFile, sheet = i)
-    masterTbl <- parseIcontrolOutput(rawDataTbl, rawKeyTbl) %>% mutate(plate = as.factor(i)) %>% bind_rows(masterTbl)
-  }
+  #masterTbl <- tbl_df(data.frame())
+  rawDataTbl <- read_excel(dataFile, col_names = FALSE, skip = 0) %>% slice(1:300)
+  rawKeyTbl <- read_excel(keyFile)
+  masterTbl <- parseIcontrolOutput(rawDataTbl, rawKeyTbl)
 
   ## fix order of columns
   masterTbl$plate_row = factor(masterTbl$plate_row,  levels = order(levels(masterTbl$plate_row)))
@@ -188,7 +186,6 @@ analyze_microplate <- function(dataFile, keyFile, output_base_name) {
 
   expBlankMasterTbl <- expTbl %>% inner_join(blankTbl, by = "commonType") %>%
     separate(commonType, into = c("time", "AA"), sep = "\\|") %>%
-  #  select(-aaRS.y, -codon.y, -cycle.y, plate) %>%
     transmute(time = time, AA = AA, replicate = replicate, aaRS = aaRS.x, clone = clone, codon = codon.x,
               rawGFS = GFS, rawOD600 = OD600, rawRFS = RFS, blankOD600 = blankOD600, blankRFS = blankRFS, blankGFS = blankGFS)
 
@@ -366,6 +363,7 @@ analyze_microplate <- function(dataFile, keyFile, output_base_name) {
 
   plot_grid(p1, p2, p3, p4, p5, align='vh', ncol=1)
   ggsave(paste0(output_base_name, ".final.pdf"), width=plot.width, height=plot.height*5)
+
   
   ## Create a data structure with calculated info in it to return
   ret = c()
