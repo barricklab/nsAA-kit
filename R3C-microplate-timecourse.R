@@ -8,7 +8,7 @@ require(cowplot)
 
 parseIcontrolOutput <- function(data, lookupTable, numMeasurementTypes = 3, numWells = 96) {
   
-  rowsPerMeasure <- numWells + 4
+  rowsPerMeasure <- numWells + 5
   data = data[1:(rowsPerMeasure*numMeasurementTypes),]
   data = data %T>% {
     colnames(.) <- c("well", paste(data[2,][2:ncol(data)],
@@ -209,9 +209,9 @@ summarize_microplates <- function(summaryOutputFileName, outputFileList, OD.rang
 analyze_microplate <- function(dataFile, keyFile, output_base_name) {
 
   ## Set for debugging
-  dataFile = "input-examples/tyrosine-081415.xlsx"
-  keyFile = "input-examples/key-tyrosine-081415.xlsx"
-  output_base_name = "output/tyrosine-081415"
+  #dataFile = "input-examples/tyrosine-081415.xlsx"
+  #keyFile = "input-examples/key-tyrosine-081415.xlsx"
+  #output_base_name = "output/tyrosine-081415"
 
   ## Global settings for graphs
   theme_set(theme_bw(base_size = 24))
